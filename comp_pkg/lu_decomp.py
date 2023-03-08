@@ -3,6 +3,7 @@ import typing as tp
 import numpy as np
 
 from .solver import AbstractSolver
+from .tools import matrix_multiplication, scalar_product
 
 
 class LU_Solver(AbstractSolver):
@@ -31,14 +32,14 @@ class LU_Solver(AbstractSolver):
     def _solve_downside(self, L: np.ndarray, right_size: np.ndarray) -> np.ndarray:
         solution: np.ndarray = np.zeros(self._dim)
         for j in range(self._dim):
-            prefix = solution[:j] @ L[j, :j]
+            prefix = scalar_product(solution[:j], L[j, :j])
             solution[j] = right_size[j] - prefix
         return solution
 
     def _solve_upside(self, U: np.ndarray, right_size: np.ndarray) -> np.ndarray:
         solution: np.ndarray = np.zeros(self._dim)
         for j in range(self._dim - 1, -1, -1):
-            prefix = U[j, j + 1:] @ solution[j + 1:]
+            prefix = scalar_product(U[j, j + 1:], solution[j + 1:])
             solution[j] = (right_size[j] - prefix) / U[j, j]
         return solution 
 
@@ -47,6 +48,6 @@ class LU_Solver(AbstractSolver):
 
         solution_L: np.ndarray = self._solve_downside(L, self._b)
         solution_U: np.ndarray = self._solve_upside(U, solution_L)
-        solution: np.ndarray = Q @ solution_U
+        solution: np.ndarray = matrix_multiplication(Q, solution_U.reshape((self._dim, -1))).flatten()
 
         return L, U, Q, solution
